@@ -138,6 +138,20 @@
 | **생성 결과 파일명 또는 링크** | `씬8.mp4` (영상 소스 원본) |
 
 
+<수정전 수정후> 
+
+<수정전>
+<img width="1280" height="720" alt="image" src="https://github.com/user-attachments/assets/aa566eb9-7e2e-438b-966e-f4d904016363" />
+<수정후>
+<img width="1280" height="720" alt="image" src="https://github.com/user-attachments/assets/8ed47a29-e800-4b49-a81a-c55dd4b70d2d" />
+
+수정전 쭈꾸미는 실제 쭈꾸미와 다른 비주얼적으로 너무 통통해서 시청자가 쭈꾸미는 맛있다에 공감하지 못할것같아서 수정하기로했다. 
+의도 : 현실적이어야지만 평소에 자주본 것을 공감할수있기 때문에 음식의 경우 사실적으로 표현했다. 
+결과 : 더 먹음직 스러운 쭈꾸미가 현실적으로 구현되었다. 
+
+
+
+
 [사용 도구 목록]
 이미지 생성 AI : -나노 바나나 , 그록 
 동영상 생성 AI : 그록 
