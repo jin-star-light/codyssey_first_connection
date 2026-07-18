@@ -71,7 +71,10 @@ Trigger
 
 합격 메시지와 오류 메시지가 Discord 채널에 전달된 것을 확인했습니다. 불합격 경로는 워크플로우 실행 완료 표시와 불합격 시트 기록으로 정상 동작을 확인했습니다.
 
-![Make Discord 알림 결과](images/project1/make-discord.png)
+![Make Discord 알림 결과]
+
+<img width="350" height="114" alt="스크린샷 2026-07-18 오후 4 18 06" src="https://github.com/user-attachments/assets/2400411d-ddaa-4547-8b7a-3231c644e464" />
+
 
 ### n8n 구현
 
