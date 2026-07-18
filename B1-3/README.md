@@ -102,9 +102,9 @@ Trigger
 
 #### Discord 실행 결과
 
-오류·합격·불합격 메시지가 Discord 채널에 전달되었습니다.
+오류·합격·불합격 메시지가 Discord 채널에 전달되었습니다.<br>
+!<img width="340" height="122" alt="스크린샷 2026-07-18 오후 4 27 53" src="https://github.com/user-attachments/assets/2752b1dc-adcb-4932-aa93-6e3a13dfe514" />
 
-![n8n Discord 알림 결과](images/project1/n8n-discord.png)
 
 ### 분기 실행 확인
 
