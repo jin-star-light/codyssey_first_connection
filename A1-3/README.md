@@ -6,7 +6,7 @@
 
 ## 배포 URL
 
-배포 후 업데이트 예정
+https://a13-sage.vercel.app/
 
 ## 주요 기능
 
