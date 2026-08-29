@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI 코딩 도구 사용 과정 — 대화 로그 요약</title>
+    <style>
+      :root { color-scheme: dark; --bg:#0b0f14; --panel:#141a22; --line:#29313d; --text:#edf2f7; --muted:#98a4b3; --accent:#7ee787; --user:#253349; --ai:#1b2c22; }
+      * { box-sizing:border-box; }
+      body { margin:0; background:radial-gradient(circle at 15% 0%,#162235 0,transparent 32rem),var(--bg); color:var(--text); font-family:Inter,"Noto Sans KR",system-ui,sans-serif; line-height:1.62; }
+      main { width:min(1080px,calc(100% - 48px)); margin:auto; padding:54px 0 70px; }
+      header { display:flex; align-items:end; justify-content:space-between; gap:24px; padding-bottom:28px; border-bottom:1px solid var(--line); }
+      .brand { display:flex; align-items:center; gap:13px; font-weight:800; letter-spacing:-.03em; }
+      .mark { display:grid; width:42px; height:42px; place-items:center; border:1px solid #3b4757; border-radius:14px; background:#111720; color:var(--accent); font-family:monospace; }
+      h1 { margin:18px 0 8px; font-size:clamp(2rem,5vw,3.5rem); line-height:1.15; letter-spacing:-.055em; }
+      header p,.date,.summary { margin:0; color:var(--muted); }
+      .date { flex:0 0 auto; padding:7px 12px; border:1px solid var(--line); border-radius:999px; font-size:.84rem; }
+      .summary { max-width:760px; margin:26px 0 32px; }
+      .timeline { display:grid; gap:15px; }
+      .entry { display:grid; grid-template-columns:105px 1fr; gap:16px; align-items:start; }
+      .role { padding-top:13px; color:var(--muted); font-size:.78rem; font-weight:800; letter-spacing:.08em; text-align:right; }
+      .bubble { padding:19px 22px; border:1px solid var(--line); border-radius:18px; background:var(--panel); box-shadow:0 12px 32px rgba(0,0,0,.18); }
+      .entry.user .bubble { background:var(--user); }
+      .entry.ai .bubble { background:var(--ai); }
+      .bubble strong { color:var(--accent); }
+      .bubble p { margin:0; }
+      .bubble ul { margin:8px 0 0; padding-left:20px; color:#cdd5df; }
+      footer { display:flex; justify-content:space-between; gap:20px; margin-top:32px; padding-top:22px; border-top:1px solid var(--line); color:var(--muted); font-size:.84rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <div class="brand"><span class="mark">&gt;_</span> Codex와 함께 만든 A1-3</div>
+          <h1>AI 코딩 도구 사용 과정</h1>
+          <p>제철한입 기획부터 구현·검증까지의 대화 로그 요약</p>
+        </div>
+        <span class="date">2026-08-29</span>
+      </header>
+      <p class="summary">아래 내용은 실제 대화에서 핵심 요청과 작업 결과를 선별해 제출용으로 정리한 로그입니다. Codex 화면을 복제한 것이 아니라, 대화의 흐름을 읽기 쉽게 시각화한 요약 자료입니다.</p>
+      <section class="timeline" aria-label="대화 타임라인">
+        <article class="entry user"><span class="role">USER</span><div class="bubble"><p>“A1-3 subject를 읽고 구현해줘.”</p></div></article>
+        <article class="entry ai"><span class="role">CODEX</span><div class="bubble"><p><strong>과제 분석</strong></p><ul><li>바닐라 HTML/CSS/JS + Python Vercel Function</li><li>AI API, 반응형, 4개 섹션, README·기획서 요구 확인</li></ul></div></article>
+        <article class="entry user"><span class="role">USER</span><div class="bubble"><p>“날짜를 입력하면 그 날짜 제철 과일추천으로 컨셉잡아줘.”</p></div></article>
+        <article class="entry ai"><span class="role">CODEX</span><div class="bubble"><p><strong>서비스 설계 — 제철한입</strong></p><ul><li>한국 국내 유통 기준 과일 3종 추천</li><li>제철 이유·맛과 영양·고르는 법·보관법·레시피 제공</li><li>월별 고정 후보 + AI 설명 생성의 혼합 방식</li></ul></div></article>
+        <article class="entry user"><span class="role">USER</span><div class="bubble"><p>“테스트는 할 필요 없어.” / “새로운 git 폴더 만들어. 이름은 A1-3이라고.”</p></div></article>
+        <article class="entry ai"><span class="role">CODEX</span><div class="bubble"><p><strong>구현</strong></p><ul><li>A1-3 독립 Git 저장소 생성</li><li>12개월 데이터와 AI API·fallback 구현</li><li>홈·추천·캘린더·이용 안내 UI와 반응형 스타일 작성</li><li>README와 서비스 기획서 작성</li></ul></div></article>
+        <article class="entry ai"><span class="role">CODEX</span><div class="bubble"><p><strong>검증과 수정</strong></p><ul><li>Python·JavaScript·Vercel JSON 구문 확인</li><li>AI 정상/기본 정보 경로와 오류 UX 확인</li><li>360px 가로 넘침 원인 추적 후 수정</li><li>비밀키 노출 검색 및 Git 작업 트리 확인</li></ul></div></article>
+      </section>
+      <footer><span>AI 코딩 도구 사용 증빙 · 대화 로그 요약</span><span>프로젝트: 제철한입</span></footer>
+    </main>
+  </body>
+</html>
