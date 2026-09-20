@@ -51,6 +51,27 @@ def test_payload_to_dataframe_maps_open_meteo_fields():
     assert result.loc[1, "temperature_mean_c"] == 1.5
 
 
+@pytest.mark.parametrize(
+    "payload",
+    [
+        None,
+        [],
+        {"daily": None},
+        {
+            "daily": {
+                "time": ["2025-01-01"],
+                "temperature_2m_mean": "0.0",
+                "temperature_2m_max": [4.0],
+                "temperature_2m_min": [-3.0],
+            }
+        },
+    ],
+)
+def test_payload_to_dataframe_rejects_non_object_or_non_array_fields(payload):
+    with pytest.raises(ValueError, match="daily|array"):
+        payload_to_dataframe(payload)
+
+
 def test_validate_reindexes_and_interpolates_two_day_gap():
     frame = make_frame()
     frame.loc[20:21, "temperature_mean_c"] = float("nan")
@@ -83,6 +104,21 @@ def test_validate_rejects_impossible_temperature_order():
     frame.loc[10, "temperature_min_c"] = frame.loc[10, "temperature_max_c"] + 1
 
     with pytest.raises(ValueError, match="min <= mean <= max"):
+        validate_and_clean(frame, "2025-01-01", "2025-12-31")
+
+
+@pytest.mark.parametrize(
+    ("column", "value"),
+    [
+        ("temperature_max_c", float("inf")),
+        ("temperature_min_c", float("-inf")),
+    ],
+)
+def test_validate_rejects_non_finite_temperatures(column, value):
+    frame = make_frame()
+    frame.loc[10, column] = value
+
+    with pytest.raises(ValueError, match="finite"):
         validate_and_clean(frame, "2025-01-01", "2025-12-31")
 
 
@@ -150,6 +186,25 @@ def test_refresh_rejects_bad_payload_without_overwriting_csv(tmp_path):
 
     with pytest.raises(ValueError, match="daily"):
         refresh_weather_csv(csv_path, bad_session)
+
+    assert csv_path.read_text(encoding="utf-8") == "original"
+
+
+def test_refresh_rejects_scalar_temperature_without_overwriting_csv(tmp_path):
+    csv_path = tmp_path / "weather.csv"
+    csv_path.write_text("original", encoding="utf-8")
+    dates = pd.date_range("2025-01-01", "2025-12-31", freq="D")
+    malformed = {
+        "daily": {
+            "time": dates.strftime("%Y-%m-%d").tolist(),
+            "temperature_2m_mean": "0" * 365,
+            "temperature_2m_max": [4.0] * 365,
+            "temperature_2m_min": [-3.0] * 365,
+        }
+    }
+
+    with pytest.raises(ValueError, match="array"):
+        refresh_weather_csv(csv_path, FakeSession(malformed))
 
     assert csv_path.read_text(encoding="utf-8") == "original"
 

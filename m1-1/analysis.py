@@ -38,6 +38,8 @@ IMAGES_DIR = PROJECT_DIR / "images"
 
 def payload_to_dataframe(payload: dict) -> pd.DataFrame:
     """Open-Meteo의 일별 응답을 표준 컬럼의 DataFrame으로 변환한다."""
+    if not isinstance(payload, dict):
+        raise ValueError("Open-Meteo payload must contain a daily object")
     daily = payload.get("daily")
     if not isinstance(daily, dict):
         raise ValueError("Open-Meteo payload must contain a daily object")
@@ -45,6 +47,14 @@ def payload_to_dataframe(payload: dict) -> pd.DataFrame:
     missing = [field for field in OPEN_METEO_FIELDS if field not in daily]
     if missing:
         raise ValueError(f"daily payload is missing fields: {', '.join(missing)}")
+
+    non_arrays = [
+        field for field in OPEN_METEO_FIELDS if not isinstance(daily[field], list)
+    ]
+    if non_arrays:
+        raise ValueError(
+            f"daily payload fields must be arrays: {', '.join(non_arrays)}"
+        )
 
     lengths = {field: len(daily[field]) for field in OPEN_METEO_FIELDS}
     if len(set(lengths.values())) != 1:
@@ -88,6 +98,9 @@ def validate_and_clean(
 
     for column in TEMPERATURE_COLUMNS:
         cleaned[column] = pd.to_numeric(cleaned[column], errors="coerce")
+
+    if cleaned[TEMPERATURE_COLUMNS].isin([float("inf"), float("-inf")]).any().any():
+        raise ValueError("temperature values must be finite")
 
     missing_values_before = int(cleaned[TEMPERATURE_COLUMNS].isna().sum().sum())
     for column in TEMPERATURE_COLUMNS:
