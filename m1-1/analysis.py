@@ -4,6 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
+
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
 import pandas as pd
 import requests
 
@@ -159,3 +165,204 @@ def load_weather_csv(csv_path: Path) -> tuple[pd.DataFrame, dict]:
         )
     frame = pd.read_csv(csv_path)
     return validate_and_clean(frame, START_DATE, END_DATE)
+
+
+def add_time_series_features(df: pd.DataFrame) -> pd.DataFrame:
+    """검증된 일별 자료에 이동평균, 변화량, 일교차를 추가한다."""
+    featured = df.copy()
+    featured[DATE_COLUMN] = pd.to_datetime(featured[DATE_COLUMN])
+    featured["rolling_mean_7d_c"] = featured["temperature_mean_c"].rolling(
+        window=7, min_periods=1
+    ).mean()
+    featured["daily_change_c"] = featured["temperature_mean_c"].diff()
+    featured["diurnal_range_c"] = (
+        featured["temperature_max_c"] - featured["temperature_min_c"]
+    )
+    return featured
+
+
+def detect_iqr_outliers(series: pd.Series) -> pd.Series:
+    """IQR 경계 밖의 값을 삭제하지 않고 불리언 마스크로 반환한다."""
+    q1 = series.quantile(0.25)
+    q3 = series.quantile(0.75)
+    iqr = q3 - q1
+    lower = q1 - 1.5 * iqr
+    upper = q3 + 1.5 * iqr
+    return (series < lower) | (series > upper)
+
+
+def monthly_summary(df: pd.DataFrame) -> pd.DataFrame:
+    """달력 월별 기온과 일교차 통계를 계산한다."""
+    grouped = df.assign(month=pd.to_datetime(df[DATE_COLUMN]).dt.month).groupby(
+        "month"
+    )
+    result = grouped.agg(
+        mean_temperature_c=("temperature_mean_c", "mean"),
+        mean_max_c=("temperature_max_c", "mean"),
+        mean_min_c=("temperature_min_c", "mean"),
+        mean_diurnal_range_c=("diurnal_range_c", "mean"),
+        days=(DATE_COLUMN, "count"),
+    )
+    return result.reindex(range(1, 13))
+
+
+def seasonal_summary(df: pd.DataFrame) -> pd.DataFrame:
+    """대한민국의 일반적인 달력 계절 구분으로 통계를 계산한다."""
+    season_by_month = {
+        1: "겨울",
+        2: "겨울",
+        3: "봄",
+        4: "봄",
+        5: "봄",
+        6: "여름",
+        7: "여름",
+        8: "여름",
+        9: "가을",
+        10: "가을",
+        11: "가을",
+        12: "겨울",
+    }
+    seasons = pd.to_datetime(df[DATE_COLUMN]).dt.month.map(season_by_month)
+    grouped = df.assign(season=seasons).groupby("season")
+    result = grouped.agg(
+        mean_temperature_c=("temperature_mean_c", "mean"),
+        mean_max_c=("temperature_max_c", "mean"),
+        mean_min_c=("temperature_min_c", "mean"),
+        mean_diurnal_range_c=("diurnal_range_c", "mean"),
+        days=(DATE_COLUMN, "count"),
+    )
+    return result.reindex(["봄", "여름", "가을", "겨울"])
+
+
+def analysis_summary(df: pd.DataFrame, quality: dict) -> dict:
+    """리포트 작성에 사용할 주요 수치를 JSON 직렬화 가능한 값으로 만든다."""
+    monthly = monthly_summary(df)
+    hottest = df.loc[df["temperature_max_c"].idxmax()]
+    coldest = df.loc[df["temperature_min_c"].idxmin()]
+    warming = df.loc[df["daily_change_c"].idxmax()]
+    cooling = df.loc[df["daily_change_c"].idxmin()]
+    warmest_month = int(monthly["mean_temperature_c"].idxmax())
+    coldest_month = int(monthly["mean_temperature_c"].idxmin())
+    range_month = int(monthly["mean_diurnal_range_c"].idxmax())
+
+    def date_text(row: pd.Series) -> str:
+        return pd.Timestamp(row[DATE_COLUMN]).strftime("%Y-%m-%d")
+
+    return {
+        "hottest_day": {
+            "date": date_text(hottest),
+            "temperature_max_c": float(hottest["temperature_max_c"]),
+        },
+        "coldest_day": {
+            "date": date_text(coldest),
+            "temperature_min_c": float(coldest["temperature_min_c"]),
+        },
+        "largest_warming": {
+            "date": date_text(warming),
+            "daily_change_c": float(warming["daily_change_c"]),
+        },
+        "largest_cooling": {
+            "date": date_text(cooling),
+            "daily_change_c": float(cooling["daily_change_c"]),
+        },
+        "warmest_month": {
+            "month": warmest_month,
+            "mean_temperature_c": float(
+                monthly.loc[warmest_month, "mean_temperature_c"]
+            ),
+        },
+        "coldest_month": {
+            "month": coldest_month,
+            "mean_temperature_c": float(
+                monthly.loc[coldest_month, "mean_temperature_c"]
+            ),
+        },
+        "largest_diurnal_range_month": {
+            "month": range_month,
+            "mean_diurnal_range_c": float(
+                monthly.loc[range_month, "mean_diurnal_range_c"]
+            ),
+        },
+        "iqr_outlier_count": int(
+            detect_iqr_outliers(df["temperature_mean_c"]).sum()
+        ),
+        "quality": quality,
+    }
+
+
+def _finish_chart(fig: plt.Figure, path: Path) -> None:
+    fig.text(
+        0.99,
+        0.01,
+        "Source: Open-Meteo Historical Weather API",
+        ha="right",
+        fontsize=8,
+        color="#555555",
+    )
+    fig.tight_layout(rect=(0, 0.03, 1, 1))
+    fig.savefig(path, dpi=160, bbox_inches="tight")
+    plt.close(fig)
+
+
+def create_visualizations(df: pd.DataFrame, output_dir: Path) -> list[Path]:
+    """리포트용 네 개의 시계열 PNG 그래프를 만든다."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    dates = pd.to_datetime(df[DATE_COLUMN])
+    paths = [
+        output_dir / "01_annual_temperature_trend.png",
+        output_dir / "02_monthly_temperature.png",
+        output_dir / "03_daily_temperature_change.png",
+        output_dir / "04_monthly_diurnal_range.png",
+    ]
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.fill_between(
+        dates,
+        df["temperature_min_c"],
+        df["temperature_max_c"],
+        color="#bcdff5",
+        alpha=0.45,
+        label="Daily min-max range",
+    )
+    ax.plot(dates, df["temperature_mean_c"], color="#8093a0", alpha=0.55, label="Daily mean")
+    ax.plot(dates, df["rolling_mean_7d_c"], color="#d1495b", linewidth=2.2, label="7-day moving average")
+    ax.set(title="Seoul Daily Temperature Trend (2025)", ylabel="Temperature (°C)", xlabel="Date")
+    ax.xaxis.set_major_locator(mdates.MonthLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
+    ax.grid(alpha=0.25)
+    ax.legend(loc="upper left")
+    _finish_chart(fig, paths[0])
+
+    monthly = monthly_summary(df)
+    labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    fig, ax = plt.subplots(figsize=(11, 6))
+    ax.plot(labels, monthly["mean_max_c"], marker="o", color="#d1495b", label="Average daily maximum")
+    ax.plot(labels, monthly["mean_temperature_c"], marker="o", color="#2d6a9f", linewidth=2.5, label="Monthly mean")
+    ax.plot(labels, monthly["mean_min_c"], marker="o", color="#52a675", label="Average daily minimum")
+    ax.set(title="Monthly Temperature Comparison", ylabel="Temperature (°C)", xlabel="Month")
+    ax.grid(axis="y", alpha=0.25)
+    ax.legend()
+    _finish_chart(fig, paths[1])
+
+    changes = df["daily_change_c"].fillna(0)
+    colors = ["#f28e2b" if abs(value) >= 5 else ("#d1495b" if value >= 0 else "#2d6a9f") for value in changes]
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.bar(dates, changes, color=colors, width=1.0)
+    ax.axhline(0, color="#333333", linewidth=0.8)
+    ax.axhline(5, color="#f28e2b", linewidth=0.9, linestyle="--", alpha=0.8)
+    ax.axhline(-5, color="#f28e2b", linewidth=0.9, linestyle="--", alpha=0.8)
+    ax.set(title="Day-to-Day Mean Temperature Change", ylabel="Change (°C)", xlabel="Date")
+    ax.xaxis.set_major_locator(mdates.MonthLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
+    ax.grid(axis="y", alpha=0.2)
+    _finish_chart(fig, paths[2])
+
+    fig, ax = plt.subplots(figsize=(11, 6))
+    bars = ax.bar(labels, monthly["mean_diurnal_range_c"], color="#59a14f")
+    ax.bar_label(bars, fmt="%.1f", padding=3)
+    ax.set(title="Average Monthly Diurnal Temperature Range", ylabel="Daily max - min (°C)", xlabel="Month")
+    ax.grid(axis="y", alpha=0.25)
+    _finish_chart(fig, paths[3])
+
+    return paths

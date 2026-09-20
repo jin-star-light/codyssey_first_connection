@@ -2,10 +2,16 @@ import pandas as pd
 import pytest
 
 from analysis import (
+    add_time_series_features,
+    analysis_summary,
+    create_visualizations,
+    detect_iqr_outliers,
     fetch_weather_payload,
     load_weather_csv,
+    monthly_summary,
     payload_to_dataframe,
     refresh_weather_csv,
+    seasonal_summary,
     validate_and_clean,
 )
 
@@ -159,3 +165,63 @@ def test_load_weather_csv_does_not_use_network(tmp_path, monkeypatch):
 
     assert len(frame) == 365
     assert quality["remaining_missing_values"] == 0
+
+
+def test_add_time_series_features_calculates_expected_values():
+    frame = make_frame(periods=10)
+
+    result = add_time_series_features(frame)
+
+    assert pd.isna(result.loc[0, "daily_change_c"])
+    assert result.loc[1, "daily_change_c"] == pytest.approx(0.05)
+    assert result.loc[0, "diurnal_range_c"] == pytest.approx(8.0)
+    assert result.loc[6, "rolling_mean_7d_c"] == pytest.approx(
+        frame.loc[:6, "temperature_mean_c"].mean()
+    )
+
+
+def test_detect_iqr_outliers_marks_extreme_without_removing_it():
+    series = pd.Series([10.0] * 8 + [40.0])
+
+    mask = detect_iqr_outliers(series)
+
+    assert mask.tolist() == [False] * 8 + [True]
+    assert series[mask].iloc[0] == 40.0
+
+
+def test_monthly_and_seasonal_summaries_use_calendar_groups():
+    frame = add_time_series_features(make_frame())
+
+    monthly = monthly_summary(frame)
+    seasonal = seasonal_summary(frame)
+
+    assert monthly.index.tolist() == list(range(1, 13))
+    assert set(seasonal.index) == {"봄", "여름", "가을", "겨울"}
+    assert monthly.loc[1, "days"] == 31
+
+
+def test_analysis_summary_returns_serializable_extremes():
+    frame = add_time_series_features(make_frame())
+
+    summary = analysis_summary(frame, {"remaining_missing_values": 0})
+
+    assert summary["hottest_day"]["date"] == "2025-12-31"
+    assert summary["hottest_day"]["temperature_max_c"] == pytest.approx(17.2)
+    assert summary["coldest_day"]["date"] == "2025-01-01"
+    assert summary["coldest_day"]["temperature_min_c"] == pytest.approx(-9.0)
+    assert summary["quality"] == {"remaining_missing_values": 0}
+
+
+def test_create_visualizations_writes_four_png_files(tmp_path):
+    frame = add_time_series_features(make_frame())
+
+    paths = create_visualizations(frame, tmp_path)
+
+    assert [path.name for path in paths] == [
+        "01_annual_temperature_trend.png",
+        "02_monthly_temperature.png",
+        "03_daily_temperature_change.png",
+        "04_monthly_diurnal_range.png",
+    ]
+    assert all(path.read_bytes().startswith(b"\x89PNG") for path in paths)
+    assert all(path.stat().st_size > 10_000 for path in paths)
