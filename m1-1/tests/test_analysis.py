@@ -1,6 +1,7 @@
 import pandas as pd
 import pytest
 
+import analysis
 from analysis import (
     add_time_series_features,
     analysis_summary,
@@ -225,3 +226,29 @@ def test_create_visualizations_writes_four_png_files(tmp_path):
     ]
     assert all(path.read_bytes().startswith(b"\x89PNG") for path in paths)
     assert all(path.stat().st_size > 10_000 for path in paths)
+
+
+def test_main_refreshes_only_when_flag_is_present(monkeypatch, tmp_path):
+    frame = make_frame()
+    calls = []
+
+    def fake_load(path):
+        calls.append("load")
+        return frame, {"remaining_missing_values": 0}
+
+    def fake_refresh(path):
+        calls.append("refresh")
+        return frame, {"remaining_missing_values": 0}
+
+    monkeypatch.setattr(analysis, "DATA_PATH", tmp_path / "weather.csv")
+    monkeypatch.setattr(analysis, "IMAGES_DIR", tmp_path / "images")
+    monkeypatch.setattr(analysis, "load_weather_csv", fake_load)
+    monkeypatch.setattr(analysis, "refresh_weather_csv", fake_refresh)
+    monkeypatch.setattr(analysis, "create_visualizations", lambda df, path: [])
+    monkeypatch.setattr(
+        analysis, "analysis_summary", lambda df, quality: {"ok": True}
+    )
+
+    assert analysis.main([]) == 0
+    assert analysis.main(["--refresh"]) == 0
+    assert calls == ["load", "refresh"]

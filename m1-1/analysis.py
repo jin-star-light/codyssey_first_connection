@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import argparse
+import json
 from pathlib import Path
 
 import matplotlib
@@ -29,6 +31,9 @@ OPEN_METEO_FIELDS = {
 OPEN_METEO_URL = "https://archive-api.open-meteo.com/v1/archive"
 START_DATE = "2025-01-01"
 END_DATE = "2025-12-31"
+PROJECT_DIR = Path(__file__).resolve().parent
+DATA_PATH = PROJECT_DIR / "data" / "seoul_weather_2025.csv"
+IMAGES_DIR = PROJECT_DIR / "images"
 
 
 def payload_to_dataframe(payload: dict) -> pd.DataFrame:
@@ -366,3 +371,29 @@ def create_visualizations(df: pd.DataFrame, output_dir: Path) -> list[Path]:
     _finish_chart(fig, paths[3])
 
     return paths
+
+
+def main(argv: list[str] | None = None) -> int:
+    """저장 데이터 또는 명시적으로 갱신한 데이터로 분석 결과를 생성한다."""
+    parser = argparse.ArgumentParser(description="Analyze Seoul temperatures in 2025")
+    parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help="download the source data again before analysis",
+    )
+    args = parser.parse_args(argv)
+
+    frame, quality = (
+        refresh_weather_csv(DATA_PATH) if args.refresh else load_weather_csv(DATA_PATH)
+    )
+    featured = add_time_series_features(frame)
+    paths = create_visualizations(featured, IMAGES_DIR)
+    summary = analysis_summary(featured, quality)
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    if paths:
+        print("Generated:", *(str(path) for path in paths), sep="\n- ")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
