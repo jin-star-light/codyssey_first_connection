@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
+import requests
 
 
 DATE_COLUMN = "date"
@@ -17,6 +20,9 @@ OPEN_METEO_FIELDS = {
     "temperature_2m_max": "temperature_max_c",
     "temperature_2m_min": "temperature_min_c",
 }
+OPEN_METEO_URL = "https://archive-api.open-meteo.com/v1/archive"
+START_DATE = "2025-01-01"
+END_DATE = "2025-12-31"
 
 
 def payload_to_dataframe(payload: dict) -> pd.DataFrame:
@@ -104,3 +110,52 @@ def validate_and_clean(
         "remaining_missing_values": remaining_missing_values,
     }
     return cleaned.reset_index(), quality
+
+
+def fetch_weather_payload(session=requests) -> dict:
+    """Open-Meteo에서 서울의 2025년 일별 기온 응답을 가져온다."""
+    params = {
+        "latitude": 37.5665,
+        "longitude": 126.9780,
+        "start_date": START_DATE,
+        "end_date": END_DATE,
+        "daily": ",".join(
+            [
+                "temperature_2m_mean",
+                "temperature_2m_max",
+                "temperature_2m_min",
+            ]
+        ),
+        "timezone": "Asia/Seoul",
+        "temperature_unit": "celsius",
+    }
+    try:
+        response = session.get(OPEN_METEO_URL, params=params, timeout=30)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as exc:
+        raise RuntimeError(f"Open-Meteo request failed: {exc}") from exc
+
+
+def refresh_weather_csv(
+    csv_path: Path, session=requests
+) -> tuple[pd.DataFrame, dict]:
+    """원격 데이터를 완전히 검증한 후 CSV를 갱신한다."""
+    payload = fetch_weather_payload(session)
+    frame = payload_to_dataframe(payload)
+    cleaned, quality = validate_and_clean(frame, START_DATE, END_DATE)
+    csv_path = Path(csv_path)
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    cleaned.to_csv(csv_path, index=False, date_format="%Y-%m-%d")
+    return cleaned, quality
+
+
+def load_weather_csv(csv_path: Path) -> tuple[pd.DataFrame, dict]:
+    """저장된 CSV를 네트워크 접근 없이 읽고 검증한다."""
+    csv_path = Path(csv_path)
+    if not csv_path.is_file():
+        raise FileNotFoundError(
+            f"Weather data not found at {csv_path}. Run python analysis.py --refresh."
+        )
+    frame = pd.read_csv(csv_path)
+    return validate_and_clean(frame, START_DATE, END_DATE)
