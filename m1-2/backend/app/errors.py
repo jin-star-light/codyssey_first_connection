@@ -94,3 +94,13 @@ def register_error_handlers(app: FastAPI) -> None:
             "datastore_unavailable",
             "데이터 저장소를 일시적으로 사용할 수 없습니다.",
         )
+
+    @app.exception_handler(AIProviderError)
+    async def ai_provider_error_handler(
+        _request: Request, _error: AIProviderError
+    ) -> JSONResponse:
+        return error_response(
+            502,
+            "ai_provider_error",
+            "AI 응답을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        )
