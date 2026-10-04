@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="학습시간 데이터로 습관을 돌아보는 AI 학습 코치">
+  <title>Study Rhythm — AI 학습 코치</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="Study Rhythm 홈">
+      <span class="brand-mark" aria-hidden="true">SR</span>
+      <span><strong>Study Rhythm</strong><small>AI 학습 코치</small></span>
+    </a>
+    <span class="status-pill"><span aria-hidden="true"></span>나의 학습 데이터</span>
+  </header>
+
+  <main id="top" class="app-shell">
+    <section class="hero" aria-labelledby="hero-title">
+      <p class="eyebrow">LEARN WITH YOUR OWN DATA</p>
+      <h1 id="hero-title">공부한 시간을 기록하고,<br><em>다음 리듬</em>을 찾아보세요.</h1>
+      <p>매일의 학습시간을 쌓으면 AI 코치가 현재 흐름을 읽고 실천 가능한 다음 행동을 제안합니다.</p>
+    </section>
+
+    <div id="global-status" class="global-status" role="status" aria-live="polite"></div>
+
+    <div class="dashboard-grid">
+      <aside class="panel conversations-panel" aria-labelledby="conversations-title">
+        <div class="panel-heading">
+          <div><span class="section-number">01</span><h2 id="conversations-title">대화 기록</h2></div>
+          <button id="new-conversation" class="icon-button" type="button" aria-label="새 대화">+</button>
+        </div>
+        <div id="conversation-list" class="conversation-list"></div>
+      </aside>
+
+      <section class="panel chat-panel" aria-labelledby="chat-title">
+        <div class="panel-heading">
+          <div><span class="section-number">02</span><h2 id="chat-title">AI 코치와 대화</h2></div>
+          <span class="ai-badge">CODYSSEY AI</span>
+        </div>
+        <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
+        <form id="chat-form" class="chat-form">
+          <label class="sr-only" for="chat-input">AI 코치에게 질문</label>
+          <textarea id="chat-input" maxlength="1000" rows="2" placeholder="예: 최근 학습 흐름을 분석해줘" required></textarea>
+          <button type="submit" aria-label="질문 보내기">보내기 <span aria-hidden="true">↗</span></button>
+        </form>
+        <p id="chat-progress" class="progress-text" aria-live="polite"></p>
+      </section>
+
+      <section class="panel summary-panel" aria-labelledby="summary-title">
+        <div class="panel-heading">
+          <div><span class="section-number">03</span><h2 id="summary-title">학습 요약</h2></div>
+          <span id="summary-period" class="subtle"></span>
+        </div>
+        <div id="summary-content" class="summary-content"></div>
+      </section>
+
+      <section class="panel data-panel" aria-labelledby="data-title">
+        <div class="panel-heading">
+          <div><span class="section-number">04</span><h2 id="data-title">학습시간 관리</h2></div>
+          <span id="record-count" class="count-badge">0 DAYS</span>
+        </div>
+        <form id="data-form" class="data-form">
+          <input id="editing-id" type="hidden">
+          <label>날짜<input id="study-date" name="date" type="date" required></label>
+          <label>학습시간<input id="study-value" name="value" type="number" min="0.1" max="24" step="0.1" placeholder="2.5" required></label>
+          <label class="memo-field">메모<input id="study-memo" name="memo" type="text" maxlength="200" placeholder="오늘의 학습 내용을 짧게 기록하세요"></label>
+          <button type="submit">기록 저장</button>
+          <button id="cancel-edit" class="secondary-button" type="button" hidden>수정 취소</button>
+        </form>
+        <p id="data-error" class="form-error" role="alert"></p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>날짜</th><th>학습시간</th><th>메모</th><th><span class="sr-only">작업</span></th></tr></thead>
+            <tbody id="data-rows"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer><span>Study Rhythm</span><span>데이터는 Firebase에 안전하게 저장됩니다.</span></footer>
+  <script src="config.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
