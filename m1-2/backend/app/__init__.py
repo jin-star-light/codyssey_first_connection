@@ -1,0 +1,1 @@
+"""Study Coach backend package."""

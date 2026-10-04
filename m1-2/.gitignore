@@ -1,0 +1,9 @@
+backend/.env
+backend/.venv/
+backend/*firebase*.json
+!backend/firebase-service-account.example.json
+Codyssey ai api키.pdf
+**/__pycache__/
+**/.pytest_cache/
+frontend/dist/
+frontend/node_modules/
