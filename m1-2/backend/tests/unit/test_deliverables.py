@@ -51,8 +51,14 @@ def test_main_readme_documents_submission_and_deployment_requirements():
         assert expected in content
 
 
-def test_component_readmes_and_screenshot_checklist_exist():
+def test_component_readmes_and_feature_screen_index_exist():
     assert "pytest" in read("backend/README.md")
     assert "node --test" in read("frontend/README.md")
     screenshots = read("screenshots/README.md")
-    assert screenshots.count("- [ ]") >= 3
+    assert screenshots.count("- [x]") == 7
+    for filename in (
+        "01-ai-chat-summary.jpg",
+        "03-conversation-history.jpg",
+        "04-data-crud.jpg",
+    ):
+        assert filename in screenshots
