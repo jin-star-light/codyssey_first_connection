@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: m1-2-study-coach-api
+    runtime: python
+    plan: free
+    rootDir: m1-2/backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:create_app --factory --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: COPA_API_KEY
+        sync: false
+      - key: AI_BASE_URL
+        value: https://copa.codyssey.kr/v1
+      - key: AI_MODEL
+        value: gpt-5.4-mini
+      - key: AI_MAX_OUTPUT_TOKENS
+        value: "500"
+      - key: FIREBASE_SERVICE_ACCOUNT_FILE
+        value: /etc/secrets/firebase-service-account.json
+      - key: ALLOWED_ORIGINS
+        sync: false
