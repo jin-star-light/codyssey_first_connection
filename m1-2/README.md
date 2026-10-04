@@ -1,111 +1,190 @@
-# M1-2 Study Rhythm — 개인 학습시간 기반 AI 코치
+# Study Rhythm — 데이터 기반 AI 학습 코치
 
-매일의 학습시간을 Firebase Firestore에 저장하고, 요약·추세와 함께 Codyssey AI가 학습 조언을 제공하는 웹 서비스입니다. 보너스 항목인 Function Calling, MCP/GPT Actions는 구현하지 않았습니다.
+## 서비스 소개
 
-## 구성
+Study Rhythm은 140일간의 학습시간 데이터를 분석하고, 그 결과를 근거로 개인화된 답변을 제공하는 AI 웹 서비스입니다. 사용자는 학습 기록을 추가·수정·삭제하고, AI와 나눈 대화를 저장한 뒤 다시 불러와 이어갈 수 있습니다.
 
-- 백엔드: FastAPI, Firebase Admin SDK, Codyssey OpenAI 호환 API
-- 프런트엔드: HTML/CSS/Vanilla JavaScript, Vercel 정적 배포
-- 데이터: `data`, `conversations` Firestore 컬렉션
-- 샘플: `backend/data/study_hours.csv`의 140행
+## 배포 주소
 
-## API
+| 구분 | 주소 |
+| --- | --- |
+| 프런트엔드 | https://m1-2-study-coach.vercel.app |
+| 백엔드 API | https://m1-2-study-coach-api.onrender.com |
+| Swagger UI | https://m1-2-study-coach-api.onrender.com/docs |
+| GitHub | https://github.com/jin-star-light/codyssey_first_connection |
 
-| 기능 | 엔드포인트 |
-|---|---|
-| 학습 기록 생성 | `POST /api/data` |
-| 학습 기록 목록 | `GET /api/data` |
-| 학습 요약 | `GET /api/data/summary` |
-| 학습 기록 수정 | `PUT /api/data/{id}` |
-| 학습 기록 삭제 | `DELETE /api/data/{id}` |
-| AI 질문 | `POST /api/chat` |
-| 대화 생성·목록 | `POST /api/conversations`, `GET /api/conversations` |
-| 대화 상세·삭제 | `GET /api/conversations/{id}`, `DELETE /api/conversations/{id}` |
-| 상태·문서 | `GET /health`, `GET /docs` |
+Render 무료 서버가 잠든 경우 첫 요청에 약 1분이 걸릴 수 있습니다. 이후 요청은 정상 속도로 처리됩니다.
+
+## 과제 요구사항 충족표
+
+| subject 요구사항 | 구현 결과 | 확인 위치 |
+| --- | --- | --- |
+| 100개 이상의 시계열 데이터 | 2025-01-01부터 2025-05-20까지 학습시간 140건 | 학습 요약, Firestore `data` |
+| 데이터 요약 | 기간, 개수, 합계, 평균, 최솟값, 최댓값, 최근 기록, 추세 계산 | `GET /api/data/summary` |
+| 데이터 CRUD | 추가·목록·수정·삭제 구현 | 학습시간 관리 화면, `/api/data` |
+| 데이터 기반 AI 채팅 | 현재 데이터 요약을 시스템 프롬프트에 넣어 답변 생성 | `POST /api/chat` |
+| 채팅 로딩 표시 | AI 응답을 기다리는 동안 로딩 상태 표시 | AI 코치 화면 |
+| 대화 저장·조회·불러오기·삭제 | AI 대화를 Firestore에 자동 저장하고 기존 대화를 다시 표시 | 대화 기록 화면, `/api/conversations` |
+| Firestore 컬렉션 | `data`, `conversations` 사용 | Firebase 캡처 |
+| FastAPI 및 Swagger | API 문서 공개 | Render `/docs` |
+| 바닐라 프런트엔드 | HTML, CSS, JavaScript만 사용 | Vercel 배포 화면 |
+| 환경변수와 키 관리 | AI 키·Firebase 키·CORS 주소를 코드와 분리 | `.env.example`, Render 환경변수 |
+| 지정 플랫폼 배포 | 백엔드 Render, 프런트엔드 Vercel | 위 배포 주소 |
+
+## 제출 스크린샷 및 필수 기능 증빙
+
+### 1. 저장된 데이터에 근거한 AI 채팅
+
+![학습 데이터에 근거한 AI 질문과 답변](./screenshots/01-ai-chat-summary.jpg)
+
+AI는 일반적인 답변만 생성하지 않습니다. 백엔드가 현재 학습 데이터 요약을 먼저 조회하고 시스템 프롬프트에 포함하므로, 답변에 실제 평균 2.9시간과 최근 기록 3.2시간이 반영됩니다. 같은 대화에서 후속 질문을 보내면 이전 메시지까지 함께 전달해 맥락을 유지합니다.
+
+![AI 답변의 근거가 되는 학습 데이터 요약](./screenshots/02-data-summary.jpg)
+
+화면에 표시된 요약은 140개 원본 기록으로 계산한 결과입니다.
+
+- 기간: 2025-01-01 ~ 2025-05-20
+- 기록 수: 140일
+- 총 학습시간: 408시간
+- 하루 평균: 2.9시간
+- 최근 기록: 3.2시간
+- 최근 추세: 유지
+
+### 2. 데이터 관리와 CRUD
+
+![새 학습 기록을 저장해 목록이 갱신된 화면](./screenshots/04-data-crud.jpg)
+
+사용자는 `(date, value, memo)` 형태의 학습 기록을 관리할 수 있습니다. 위 화면은 새 기록을 생성한 직후 목록 최상단에 결과가 반영된 모습입니다. 제출용 임시 기록은 캡처 후 삭제해 실제 데이터는 다시 140건으로 복구했습니다.
+
+구현된 API는 다음과 같습니다.
+
+| 동작 | API |
+| --- | --- |
+| 생성 | `POST /api/data` |
+| 목록 조회 | `GET /api/data` |
+| 수정 | `PUT /api/data/{id}` |
+| 삭제 | `DELETE /api/data/{id}` |
+| 요약 조회 | `GET /api/data/summary` |
+
+### 3. 대화 기록 저장과 불러오기
+
+![저장된 대화 목록과 불러온 대화](./screenshots/03-conversation-history.jpg)
+
+첫 질문을 보내면 대화가 자동으로 생성되고, 후속 질문과 답변은 같은 대화에 추가됩니다. 왼쪽 대화 기록에는 저장된 제목과 메시지 수가 표시되며, 항목을 선택하면 Firestore에서 전체 메시지를 불러와 다시 표시합니다.
+
+| 동작 | API |
+| --- | --- |
+| 대화 저장 | `POST /api/conversations` |
+| 목록 조회 | `GET /api/conversations` |
+| 특정 대화 불러오기 | `GET /api/conversations/{id}` |
+| 대화 삭제 | `DELETE /api/conversations/{id}` |
+
+### 4. 배포와 API 문서
+
+![Render에 배포된 FastAPI Swagger UI](./screenshots/05-swagger.jpg)
+
+Swagger UI에서 데이터 요약, CRUD, 대화 기록, AI 채팅 API를 확인하고 직접 요청할 수 있습니다. 프런트엔드는 Vercel, 백엔드는 Render에 각각 배포했습니다.
+
+### 5. Firestore 영구 저장
+
+![Firestore data 컬렉션](./screenshots/06-firestore-data.jpg)
+
+`data` 컬렉션은 날짜를 문서 ID로 사용하며 `date`, `value`, `memo`를 저장합니다. 같은 날짜가 중복 생성되는 것을 막고 날짜별 기록을 바로 찾을 수 있습니다.
+
+![Firestore conversations 컬렉션](./screenshots/07-firestore-conversations.jpg)
+
+`conversations` 컬렉션에는 제목, 생성·수정 시각, 사용자와 AI의 메시지 배열을 저장합니다. 따라서 페이지를 새로 열어도 이전 대화를 불러올 수 있습니다.
+
+## 핵심 동작 흐름
+
+```text
+사용자 질문
+  → FastAPI POST /api/chat
+  → Firestore data 조회
+  → 기간·통계·최근 추세 요약
+  → 요약 정보를 시스템 프롬프트에 주입
+  → Codyssey OpenAI 호환 API 호출
+  → 답변과 대화 내용을 conversations에 저장
+  → 프런트엔드에 답변과 갱신된 대화 기록 표시
+```
+
+이 방식이 컨텍스트 주입입니다. 모델을 별도로 학습시키지 않고, 요청 시점의 최신 데이터 요약을 시스템 프롬프트로 제공해 사용자의 실제 상황을 반영합니다. 프롬프트에는 “없는 데이터는 만들지 말고, 데이터가 부족하면 명시하라”는 조건도 포함했습니다.
+
+## 과제 목표 설명
+
+### 시계열 데이터 요약
+
+기록을 날짜순으로 정렬한 뒤 기간, 개수, 합계, 평균, 최솟값, 최댓값, 최초·최근 값과 전체 변화를 계산합니다. 최근 추세는 최근 10개 평균과 그 이전 10개 평균을 비교하며, 차이가 0.2시간 이내이면 `유지`, 그보다 크면 `증가`, 작으면 `감소`로 판정합니다.
+
+### FastAPI 구조 분리 기준
+
+- `routers`: URL과 HTTP 요청·응답 처리
+- `schemas`: Pydantic 요청·응답 형식과 검증 규칙
+- `services`: 요약 계산, 채팅, 대화 처리 같은 업무 로직
+- `repositories`: Firestore 읽기와 쓰기
+- `clients`: 외부 AI API 호출
+
+각 계층의 역할을 분리했기 때문에 통계 계산이나 데이터 저장 방식을 변경해도 다른 계층에 미치는 영향을 줄일 수 있습니다.
+
+### Pydantic 검증
+
+API 경계에서 날짜, 학습시간, 메모와 메시지 형식을 검증합니다. 잘못된 값이 Firestore나 AI 요청까지 전달되기 전에 FastAPI가 일관된 오류 응답을 반환하므로 데이터 품질과 예외 처리가 단순해집니다.
+
+### CORS·환경변수·키 관리
+
+Vercel과 Render는 서로 다른 도메인이므로 백엔드의 `ALLOWED_ORIGINS`에 실제 Vercel 주소를 지정해야 합니다. AI API 키와 Firebase 서비스 계정은 저장소에 넣지 않고 Render의 환경변수와 Secret File로 관리합니다. 프런트엔드에는 비밀키를 두지 않고 공개 백엔드 주소만 `API_BASE_URL`로 주입합니다.
+
+## 기술 스택
+
+- 프런트엔드: HTML, CSS, Vanilla JavaScript, Vercel
+- 백엔드: Python 3.10+, FastAPI, Uvicorn, Pydantic, Render
+- 데이터베이스: Firebase Firestore
+- AI: Codyssey OpenAI 호환 API
+- 테스트: pytest, Node.js test runner
 
 ## 로컬 실행
 
-Python 3.10 이상과 Node.js 20 이상이 필요합니다. `backend/.env.example`을 `backend/.env`로 복사하고 실제 값은 로컬 파일에만 입력합니다.
+### 백엔드
 
 ```powershell
 cd m1-2/backend
 python -m venv .venv
-.venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+Copy-Item .env.example .env
 uvicorn app.main:create_app --factory --reload
 ```
 
-필수 백엔드 환경 변수:
+Firebase 서비스 계정 JSON을 `backend/firebase-service-account.json`에 두고 `.env` 값을 설정합니다. 실제 키 파일은 Git에 커밋하지 않습니다.
 
-- `COPA_API_KEY`: Codyssey API 콘솔에서 발급한 전체 키
-- `FIREBASE_SERVICE_ACCOUNT_FILE`: Firebase 서비스 계정 JSON 경로
-- `ALLOWED_ORIGINS`: 프런트엔드 주소. 여러 개면 쉼표로 구분
-- `AI_BASE_URL=https://copa.codyssey.kr/v1`
-- `AI_MODEL=gpt-5.4-mini`
-
-샘플 검증과 실제 입력:
-
-```powershell
-python scripts/import_csv.py data/study_hours.csv --dry-run
-python scripts/import_csv.py data/study_hours.csv
-```
-
-프런트엔드는 공개 백엔드 주소만 받습니다. AI 키나 Firebase 키를 넣지 않습니다.
+### 프런트엔드
 
 ```powershell
 cd m1-2/frontend
+npm install
 $env:API_BASE_URL="http://localhost:8000"
 npm run build
 python -m http.server 5173 -d dist
 ```
 
-## 사용자가 직접 해야 하는 배포 작업
+브라우저에서 `http://localhost:5173`에 접속합니다.
 
-아래 서비스는 과제 규모에서 무료 요금제로 시작할 수 있습니다. 별도 유료 도구는 필수가 아닙니다. Render 무료 서버는 한동안 요청이 없으면 잠들 수 있어 첫 응답이 최대 약 1분 느릴 수 있습니다.
+## 환경변수
 
-1. **Firebase**
-   - Firebase Console에서 프로젝트를 만들고 Firestore Database를 Native 모드로 생성합니다.
-   - 프로젝트 설정 → 서비스 계정 → 새 비공개 키 생성으로 JSON을 내려받습니다.
-   - JSON은 GitHub에 올리지 않습니다. 로컬에서는 `backend/.env`가 가리키게 합니다.
-2. **GitHub**
-   - 이 프로젝트를 본인 비공개 또는 공개 저장소에 push합니다.
-   - `Codyssey ai api키.pdf`, `.env`, 실제 서비스 계정 JSON이 커밋되지 않았는지 확인합니다.
-3. **Render 백엔드**
-   - GitHub 저장소를 연결하고 `backend/render.yaml` Blueprint를 사용하거나 같은 값으로 Web Service를 만듭니다.
-   - Secret 환경 변수 `COPA_API_KEY`를 입력합니다.
-   - Secret File 경로 `/etc/secrets/firebase-service-account.json`에 Firebase JSON 내용을 등록합니다.
-   - 처음에는 `ALLOWED_ORIGINS`를 로컬 주소로 두고 배포합니다. 배포 후 `https://본인서비스.onrender.com/health`와 `/docs`를 확인합니다.
-4. **샘플 데이터 입력**
-   - 로컬 `.env`에서 배포용 Firebase 서비스 계정을 가리킨 뒤 위 `python scripts/import_csv.py ...` 명령을 실행합니다.
-   - 140행이 생성되고 두 번째 실행은 중복 날짜를 `skipped`로 표시해야 합니다.
-5. **Vercel 프런트엔드**
-   - 같은 GitHub 저장소를 연결하고 Root Directory를 `m1-2/frontend`로 지정합니다.
-   - Build Command는 `npm run build`, Output Directory는 `dist`입니다.
-   - 환경 변수 `API_BASE_URL`에 Render의 `https://...onrender.com` 주소를 입력합니다.
-   - Vercel 배포 주소가 나오면 Render의 `ALLOWED_ORIGINS`를 그 주소로 변경하고 재배포합니다.
-6. **최종 확인과 제출**
-   - 데이터 생성·수정·삭제, 요약 갱신, AI 새 대화·이어가기·삭제를 직접 확인합니다.
-   - `screenshots/README.md` 체크리스트에 따라 스크린샷을 촬영합니다.
-   - 아래 실제 주소를 제출 문서에 사용합니다.
+| 변수 | 위치 | 용도 |
+| --- | --- | --- |
+| `COPA_API_KEY` | 백엔드 | Codyssey에서 발급한 OpenAI 호환 API 키 |
+| `AI_BASE_URL` | 백엔드 | Codyssey API 기본 주소 |
+| `AI_MODEL` | 백엔드 | 사용할 AI 모델 |
+| `AI_MAX_OUTPUT_TOKENS` | 백엔드 | 응답 토큰 상한 |
+| `FIREBASE_SERVICE_ACCOUNT_FILE` | 백엔드 | Firebase 서비스 계정 JSON 경로 |
+| `ALLOWED_ORIGINS` | 백엔드 | 허용할 프런트엔드 도메인 |
+| `API_BASE_URL` | 프런트엔드 빌드 | Render 백엔드 공개 주소 |
 
-```
-Frontend URL: https://m1-2-study-coach.vercel.app
-Backend URL:  https://m1-2-study-coach-api.onrender.com
-API Docs:     https://m1-2-study-coach-api.onrender.com/docs
-GitHub URL:   https://github.com/jin-star-light/codyssey_first_connection
-```
+Codyssey 키가 OpenAI 호환 방식으로 동작하므로 subject의 `OPENAI_API_KEY` 역할을 이 프로젝트에서는 `COPA_API_KEY`가 담당합니다.
 
-## 테스트
+## 발표용 요약
 
-```powershell
-cd m1-2/backend
-python -m pytest -q
-python -m compileall -q app scripts
+> “Study Rhythm은 140일의 학습시간 데이터를 Firestore에 저장하고 통계와 최근 추세를 계산하는 서비스입니다. 사용자가 질문하면 FastAPI가 최신 요약을 시스템 프롬프트에 넣어 Codyssey AI를 호출하므로 실제 학습 상태에 맞는 답변을 제공합니다. 데이터 CRUD와 대화 저장·불러오기를 구현했고, 프런트엔드는 Vercel, 백엔드는 Render에 배포했습니다.”
 
-cd ../frontend
-npm test
-$env:API_BASE_URL="https://example.onrender.com"
-npm run build
-```
-
-배포와 제출용 캡처까지 완료했습니다. 실제 API 키와 Firebase 서비스 계정 JSON은 저장소에 포함하지 않습니다.
+보너스 과제는 구현 범위에서 제외했습니다.
