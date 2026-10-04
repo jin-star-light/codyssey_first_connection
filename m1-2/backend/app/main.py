@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import Settings
 from app.errors import register_error_handlers
 from app.routers.data import router as data_router
+from app.routers.conversations import router as conversations_router
 
 
 def create_app(
@@ -32,6 +33,7 @@ def create_app(
     )
     register_error_handlers(app)
     app.include_router(data_router)
+    app.include_router(conversations_router)
 
     @app.get("/health", tags=["system"])
     def health() -> dict[str, str]:

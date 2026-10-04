@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 
 from app.errors import DuplicateDateError
 from app.schemas.data import DataCreate, DataRecord
+from app.schemas.conversations import Conversation, ConversationMessage
 
 
 class InMemoryDataRepository:
@@ -46,3 +47,50 @@ class InMemoryDataRepository:
 
     def delete(self, record_id: str) -> bool:
         return self._records.pop(record_id, None) is not None
+
+
+class InMemoryConversationRepository:
+    def __init__(self) -> None:
+        self._records: dict[str, Conversation] = {}
+        self._next_id = 1
+
+    def create(self, title: str, messages: list[ConversationMessage]) -> Conversation:
+        now = datetime.now(UTC)
+        record = Conversation(
+            id=f"conversation-{self._next_id}",
+            title=title,
+            messages=deepcopy(messages),
+            created_at=now,
+            updated_at=now,
+        )
+        self._next_id += 1
+        self._records[record.id] = deepcopy(record)
+        return deepcopy(record)
+
+    def list(self) -> list[Conversation]:
+        return [deepcopy(item) for item in self._records.values()]
+
+    def get(self, conversation_id: str) -> Conversation | None:
+        item = self._records.get(conversation_id)
+        return deepcopy(item) if item else None
+
+    def delete(self, conversation_id: str) -> bool:
+        return self._records.pop(conversation_id, None) is not None
+
+    def append_exchange(
+        self,
+        conversation_id: str,
+        user_message: ConversationMessage,
+        assistant_message: ConversationMessage,
+    ) -> Conversation | None:
+        current = self._records.get(conversation_id)
+        if current is None:
+            return None
+        updated = current.model_copy(
+            update={
+                "messages": current.messages + [user_message, assistant_message],
+                "updated_at": datetime.now(UTC),
+            }
+        )
+        self._records[conversation_id] = deepcopy(updated)
+        return deepcopy(updated)
