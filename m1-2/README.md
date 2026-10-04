@@ -86,13 +86,13 @@ python -m http.server 5173 -d dist
 6. **최종 확인과 제출**
    - 데이터 생성·수정·삭제, 요약 갱신, AI 새 대화·이어가기·삭제를 직접 확인합니다.
    - `screenshots/README.md` 체크리스트에 따라 스크린샷을 촬영합니다.
-   - 아래 실제 주소를 채워 제출 문서에 사용합니다.
+   - 아래 실제 주소를 제출 문서에 사용합니다.
 
 ```
-Frontend URL: https://________________.vercel.app
-Backend URL:  https://________________.onrender.com
-API Docs:     https://________________.onrender.com/docs
-GitHub URL:   https://github.com/________________/________________
+Frontend URL: https://m1-2-study-coach.vercel.app
+Backend URL:  https://m1-2-study-coach-api.onrender.com
+API Docs:     https://m1-2-study-coach-api.onrender.com/docs
+GitHub URL:   https://github.com/jin-star-light/codyssey_first_connection
 ```
 
 ## 테스트
@@ -108,4 +108,4 @@ $env:API_BASE_URL="https://example.onrender.com"
 npm run build
 ```
 
-실제 API 키, Firebase 연결, Render/Vercel 공개 URL, 제출용 스크린샷은 배포 계정 소유자인 사용자가 확인해야 합니다.
+배포와 제출용 캡처까지 완료했습니다. 실제 API 키와 Firebase 서비스 계정 JSON은 저장소에 포함하지 않습니다.
